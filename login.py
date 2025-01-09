@@ -1,3 +1,3 @@
 login = 'admin'
-password = 'Matek@rcsi1'
+password = '********'
 ip = '192.168.8.1'
