@@ -1,18 +1,18 @@
-from huawei_lte_api.Client import Device
-from huawei_lte_api.AuthorizedConnection import Connection
+from huawei_lte_api.Client import Client
+from huawei_lte_api.Connection import Connection
 from time import strftime, gmtime
 from login import *
 from email.message import EmailMessage
 import smtplib
 import time
-import subprocess
+from huawei_lte_api.enums.client import ResponseEnum
 
 def  SendMail(contenct):
     email_subject = "Alert from Huawei router"
     sender_email_address = "kusinczky@gmail.com"
     receiver_email_address = "info.kusinczky@gmail.com"
     email_smtp = "smtp.gmail.com"
-    email_password = "oarc pdfs lkgy zuqo"
+    email_password = "ictr yglk eldq yxrb"
     
     # create an email message object
     message = EmailMessage()  
@@ -36,35 +36,38 @@ def  SendMail(contenct):
     server.ehlo()
     # secure the SMTP connection
     server.starttls()
-    
-    # login to email account
-    server.login(sender_email_address, email_password)
-    # send email
-    server.send_message(message)
-    # close connection to server
-    server.quit()
+    try:
+        server.login(sender_email_address, email_password)
+        # login to email account
+        # send email
+        server.send_message(message)
+        # close connection to server
+        server.quit()
+    except Exception as e:
+        print(str(e) + strftime(" - %Y-%m-%d %H:%M:%S", gmtime()))
+      
 
 
 # with Connection('http://192.168.8.1/') as connection: For limited access, I have valid credentials no need for limited access
-connection = Connection(f'http://{ip}/', login, password)
-device = Device(connection)
-temp=device.information().get('WanIPAddress')
+temp=''
 while True:    
-    try:       
-        if (temp != device.information().get('WanIPAddress')):  
-            temp=device.information().get('WanIPAddress')
-            SendMail("WanIPAdress is changed. "+ temp + strftime("%Y-%m-%d %H:%M:%S", gmtime()))
-        print(str(device.signal().get('cell_id')))
-        print(temp)
-        if device.signal().get('cell_id') == None:
-            print("Internet is down. Devices is rebooting. " + strftime("%Y-%m-%d %H:%M:%S", gmtime()))
-            device.reboot()
-            SendMail("Internet is down. Devices is rebooting. " + strftime("%Y-%m-%d %H:%M:%S", gmtime()))            
-            time.sleep(60)  
-        time.sleep(60)  
-    except Exception as e:
-        if(subprocess.check_output(["ping", "-c", "1", "http://{ip}/"])):
-            connection = Connection(f'http://{ip}/', login, password)
-            device = Device(connection)
-        time.sleep(60)
+    try:
+        with Connection(f'http://{ip}/', login, password) as connection:
+            client = Client(connection)
+            if (temp != client.device.information().get('WanIPAddress')):  
+                temp=client.device.information().get('WanIPAddress')
+                SendMail("WanIPAdress is changed. "+ temp + strftime(" - %Y-%m-%d %H:%M:%S", gmtime()))
+            print(str(client.device.signal().get('cell_id')))
+            print(temp)
+            if client.device.signal().get('cell_id') == None:
+                print("Internet is down. Devices is rebooting. " + strftime(" - %Y-%m-%d %H:%M:%S", gmtime()))
+                client.device.reboot()
+                SendMail("Internet is down. Devices is rebooting. " + strftime(" - %Y-%m-%d %H:%M:%S", gmtime()))            
+                time.sleep(120)  
+            time.sleep(120)
+    except Exception as e:        
+        print(str(e) + strftime(" - %Y-%m-%d %H:%M:%S", gmtime()))
+        SendMail("Alert. "+ str(e) + strftime(" - %Y-%m-%d %H:%M:%S", gmtime()))
+        time.sleep(120)
+    
         
