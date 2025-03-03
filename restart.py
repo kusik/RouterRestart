@@ -46,29 +46,42 @@ def  SendMail(contenct):
     except Exception as e:
         print(str(e) + strftime(" - EMAIL - %Y-%m-%d %H:%M:%S", gmtime()))
       
-
-
+sendit=False
+daylyreboot=False
 # with Connection('http://192.168.8.1/') as connection: For limited access, I have valid credentials no need for limited access
-temp=''
 while True:    
     try:
+        print("Start next check at" + strftime(" %Y-%m-%d %H:%M:%S", gmtime()))
         with Connection(f'http://{ip}/', login, password) as connection:
             client = Client(connection)
-            if (temp != client.device.information().get('WanIPAddress')):
-                temp=client.device.information().get('WanIPAddress')
-                SendMail("WanIPAdress is changed. "+ temp + strftime(" - %Y-%m-%d %H:%M:%S", gmtime()))
-                print(str(client.device.signal().get('cell_id')))
-                print(temp)
-            if client.device.signal().get('cell_id') == None:
+            wanIP=client.device.information().get('WanIPAddress')
+            cellid=client.device.signal().get('cell_id')
+            if gmtime().tm_hour>1 and gmtime().tm_hour<2 and daylyreboot==False:
+                print("Dayly reboot at 1:30")
+                client.device.reboot()
+                daylyreboot=True
+                time.sleep(300)
+                continue
+            if gmtime().tm_hour>2:
+                daylyreboot=False
+            if wanIP!=None and cellid!=None:
+                if sendit:
+                    SendMail("Internet is down. Devices is rebooted. " + strftime(" - %Y-%m-%d %H:%M:%S", gmtime()))
+                    sendit=False
+                print("cellId:"+cellid)
+                print("wanIP:"+wanIP)
+            else:            
                 print("Internet is down. Devices is rebooting. " + strftime(" - %Y-%m-%d %H:%M:%S", gmtime()))
                 client.device.reboot()
-                SendMail("Internet is down. Devices is rebooting. " + strftime(" - %Y-%m-%d %H:%M:%S", gmtime()))            
-                time.sleep(120) 
+                sendit=True
+                time.sleep(300)
+
             connection.close()
             time.sleep(300)
+            print("-----------------------------------")
     except Exception as e:       
         print(str(e) + strftime(" - %Y-%m-%d %H:%M:%S", gmtime()))
         SendMail("Alert. "+ str(e) + strftime(" - %Y-%m-%d %H:%M:%S", gmtime()))
-        time.sleep(180)
+        time.sleep(300)
     
         
